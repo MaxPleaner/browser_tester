@@ -24,12 +24,16 @@ class MainServer::Browser
   end
 
   def self.ensure_chrome_is_reachable(eval_result)
-    if eval_result.is_a?(Hash) && \
-    eval_result['message'].include?("chrome not reachable")
+    if eval_result.is_a?(Hash) && is_disconnected?(eval_result['message'])
       const_set(:Driver, CapybaraDriver.new_driver)
-      [nil, "browser window was closed - restarted. Try again."]
-    else
-      [eval_result, nil]
+      return [nil, "browser window was closed - restarted. Try again."]
+    end
+    [eval_result, nil]
+  end
+
+  def self.is_disconnected?(msg)
+    ["chrome not reachable", "disconnected"].any? do |str|
+      msg.include?(string)
     end
   end
 
