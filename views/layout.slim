@@ -2,5 +2,36 @@ doctype html
 html
   head
     script src='./jquery.js'
+    sass:
+      .blackbox
+        display: block
+        border: 5px solid black
+        margin: 15px
+        padding: 10px
+
+      .hidden
+        display: none
+
+      .inline-box
+        display: inline-block
+        margin: 15px
+        padding: 10px
+        border: 5px solid darkblue
   body
     == yield
+
+  coffee:
+
+    window.initToggling = ->
+      $toggleTriggers = $("*[toggles]")
+      $toggleTriggers.off("click").on "click", (e) ->
+        targetSelector = e.attr "toggles"
+        $target = $ targetSelector
+        $target.toggleClass "hidden"
+
+    window.confirmSubmit = (e) ->
+      if confirm("are you sure")
+        true # continue with the event
+      else
+        e.preventDefault()
+        false

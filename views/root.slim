@@ -1,9 +1,47 @@
-form action='/browser' method="POST"
-  input type='text' name='cmd' placeholder='cmd'
-  input type='submit' value='run'
+- commands = Db.transaction { Db[:commands] }
 
-== @results
-== @err
+div.blackbox
+  header create command
+  form action='/create_command' method="POST"
+    input type='text' name='name' placeholder='name'
+    input type='text' name='command' placeholder='command'
+    input type='submit' value='create command'
+
+- if commands.keys.any?
+
+  div.blackbox
+  
+    - commands.each do |id, command|
+      
+      header = command[:name]
+      i = command[:command]
+
+      div.inlinebox
+        form.delete action='/delete_command' method='POST'
+          input type='hidden' name='id' value=id
+          input type='submit' value='delete'
+    
+      div.inlinebox
+        button toggles="[action='update_command']" edit
+        form.hidden action='update_command' method='POST'
+          input type='hidden' name='id' value=id
+          input type='text' name='name' value=command[:name]
+          input type='text' name='command' value=command[:command]
+          input type='submit' value='update'
+    
+      div.inlinebox
+        form action='run_command' method='POST'
+          input type='hidden' name='id' value=id
+          input type='submit' value='run'
+  
+
+- if @results
+  div.blackbox
+    == @results
+
+- if @err
+  div.blackbox
+    == @err
 
 coffee:
   
@@ -17,6 +55,7 @@ coffee:
 
     this.ws.onmessage = (msg) ->
       data = JSON.parse msg.data
+      console.log "you've got mail: "
       console.dir data
 
     this.ws.onclose = ->
@@ -28,4 +67,6 @@ coffee:
     console.log "doc ready"
     window.helpers = new SocketHelpers()
     window.ws = helpers.ws
+    initToggling()
+    $(".delete").off("submit").on "submit", (e) -> confirmSubmit e
   )
