@@ -1,0 +1,21 @@
+form action='/browser' method="POST"
+  input type='text' name='cmd' placeholder='cmd'
+  input type='submit' value='run'
+
+== @results
+== @err
+
+coffee:
+  
+  ws = new WebSocket("ws://#{window.document.location.host}/")
+
+  ws.onopen = ->
+    ws.send JSON.stringify foo: "bar"
+
+  ws.onmessage = (msg) ->
+    data = JSON.parse msg.data
+    console.dir data
+
+  $(->
+    console.log "doc ready"
+  )
