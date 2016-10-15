@@ -1,7 +1,11 @@
 class MainServer
 
   get ['/', '/browser'] do
-    slim :root
+    if Faye::WebSocket.websocket?(request.env) 
+      Websockets.setup_client request
+    else
+      slim :root
+    end
   end
 
   post '/browser' do

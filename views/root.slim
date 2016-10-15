@@ -7,15 +7,25 @@ form action='/browser' method="POST"
 
 coffee:
   
-  ws = new WebSocket("ws://#{window.document.location.host}/")
+  window.SocketHelpers = ->
 
-  ws.onopen = ->
-    ws.send JSON.stringify foo: "bar"
+    this.ws = new WebSocket("ws://#{window.document.location.host}/")
 
-  ws.onmessage = (msg) ->
-    data = JSON.parse msg.data
-    console.dir data
+    this.ws.onopen = =>
+      console.log "ws open"
+      this.ws.send JSON.stringify foo: "bar"
+
+    this.ws.onmessage = (msg) ->
+      data = JSON.parse msg.data
+      console.dir data
+
+    this.ws.onclose = ->
+      console.log "ws closed"
+
+    this
 
   $(->
     console.log "doc ready"
+    window.helpers = new SocketHelpers()
+    window.ws = helpers.ws
   )
