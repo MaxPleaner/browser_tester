@@ -3,7 +3,8 @@
 
 div.blackbox
 
-  form action='/create_command' method="POST"
+  button toggles="#create-command" create command
+  form#create-command.hidden action='/create_command' method="POST"
     b name: 
     br
     input type='text' name='name' placeholder='name'
@@ -12,41 +13,60 @@ div.blackbox
     br
     input type='text' name='command' placeholder='command'
     br
-    input type='submit' value='create command'
+    input type='submit' value='save'
+
+hr.cool-hr
 
 div.blackbox
 
   div#modules
-
-    form action='/new_module' method="POST"
+    
+    button toggles='#create-module' create module
+    form#create-module.hidden action='/new_module' method="POST"
       b name:
       br
       input type='text' name='name' placeholder='name'
       br
       input type='submit' value='create module'
+    br
+
+    hr.cool-hr
     
     - if modules.keys.any?
+      br
+      button toggles="#modules-list" modules list
+      br
+      br
+      i drag command into a module
+      br
+      i commands can be dragged between modules and re-sorted
       div.blackbox#modules-list.clearfix
         - modules.each do |module_id, module_obj|
           div class=("#{module_id} module tooltip") data-id=module_id
-            p = module_obj[:name]
+            button toggles=(".#{module_id}.module-commands") = module_obj[:name]
             br
-            form.delete-module action='delete_module' method="POST"
-              input type='hidden' name='id' value=module_id
-              input type='submit' value='delete'
-            br
-            ul.sortable-module-command-list
-              - (module_obj[:commands] || []).each_with_index do |command_id, idx|
-                - module_command = commands[command_id]
-                li.module-command data-id=command_id data-name=module_command[:name]
-                  b = module_command[:name]
-                  br
-                  button class='remove-module-command' remove command
-                  br
+            div class=("#{module_id} module-commands")
+              ul.sortable-module-command-list
+                - (module_obj[:commands] || []).each_with_index do |command_id, idx|
+                  - module_command = commands[command_id]
+                  li.module-command data-id=command_id data-name=module_command[:name]
+                    b = module_command[:name]
+                    br
+                    button class='remove-module-command' remove command
+                    br
+              br
+              form.delete-module action='delete_module' method="POST"
+                input type='hidden' name='id' value=module_id
+                input type='submit' value='delete'
+
+      div.clearfix
+      hr.cool-hr
+
 div.clearfix
 - if commands.keys.any?
-
   div.blackbox
+    button toggles="#commands-list" commands list
+  div.blackbox#commands-list
   
     - commands.each do |id, command|
       div class=("#{id} command") data-id=id
@@ -81,6 +101,7 @@ div.clearfix
               = command[:command]
           br
           input type='submit' value='update'
+  hr.cool-hr
 
 - if @results
   div.blackbox
