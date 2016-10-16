@@ -81,12 +81,40 @@ class MainServer
     redirect '/'
   end
 
+  post '/run_module' do
+    id = params[:id]
+    interval = params[:interval] || 1 # default num seconds between commands
+    commands = Db.transaction { Db[:modules][id][:commands] }.map do |cmd_id|
+      Db.transaction { Db[:commands][cmd_id] }
+    end
+    run_commands(commands, interval)
+  end
+
+  post '/export_module' do
+  end
+
   private
 
   def sync_module(module_id, command_list)
     Db.transaction do
       Db[:modules][module_id][:commands] = command_list
     end
+  end
+
+  def run_commands(commands, interval)
+    # Thread.new do
+      commands.each do |command|
+        @results, @err = Browser.execute_command(command)
+        Websockets.send_to_all({
+          log: {
+            results: @results,
+            error: @err
+          }
+        })
+        sleep interval.to_i
+      end
+    # end
+    slim :root
   end
   
 end

@@ -28,5 +28,9 @@ class MainServer::Websockets
   def self.send_message(client, object)
     client.send(object.to_json)
   end
+  
+  def self.send_to_all(object)
+    Clients.each { |client| send_message client, object }
+  end
 
 end

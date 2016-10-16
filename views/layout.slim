@@ -12,7 +12,10 @@ html
         background-color: lightgrey
         color: black
         font-family: monospace
-
+      
+      .bordered
+        border-left: 1px dotted grey
+        padding-left: 20px
 
       input
         background-color: lightgrey
@@ -99,6 +102,20 @@ html
         e.preventDefault()
         false
 
+    window.isHash = (obj) ->
+      !obj || Array.isArray(obj) || (obj.constructor != Object)
+
+    
+    window.printLog = (msg) ->
+      $logMsg = $("<div class='logMsg'></div>").html(msg)
+      $removeBtn = $("<button class='removeLogMsg'><b>clear</b></button>")
+      $("#log").removeClass("hidden").append($logMsg.prepend($removeBtn))
+      logMsgRemoveListener($removeBtn)
+
+    window.logMsgRemoveListener = ($removeBtn) ->
+      $removeBtn.off("click").on 'click', (e) ->
+        $logMsg = $(e.currentTarget).parents(".logMsg")
+        $logMsg.remove()
 
     window.SocketHelpers = ->
 
@@ -110,8 +127,9 @@ html
 
       this.ws.onmessage = (msg) ->
         data = JSON.parse msg.data
-        console.log "you've got mail: "
         console.dir data
+        if Object.keys(data).includes("log")
+          printLog(JSON.stringify data.log)
 
       this.ws.onclose = ->
         console.log "ws closed"

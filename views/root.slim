@@ -1,11 +1,27 @@
 - commands = Db.transaction { Db[:commands] }
 - modules = Db.transaction { Db[:modules] }
 
+pre.hidden#log
+
 div.blackbox
 
   button toggles="#create-command" create command
-  form#create-command.hidden action='/create_command' method="POST"
-    br
+
+  form.bordered#create-command.hidden action='/create_command' method="POST"
+    
+    ul
+      li
+        i
+         | the 
+         a href='https://github.com/jnicklas/capybara' capybara 
+         | api is available as top-level methods
+      li
+        i
+         | for example, a command to open a url is 
+         code visit 'http://google.com'
+      li
+        i more broadly, though, a command can contain arbitrary ruby code.
+
     b name: 
     br
     input type='text' name='name' placeholder='name'
@@ -14,7 +30,7 @@ div.blackbox
     b command:
     br
     br
-    input type='text' name='command' placeholder='command'
+    textarea name='command' placeholder='# ruby code'
     br
     br
     input type='submit' value='save'
@@ -27,7 +43,7 @@ div.blackbox
   div#modules
     
     button toggles='#create-module' create module
-    form#create-module.hidden action='/new_module' method="POST"
+    form.bordered#create-module.hidden action='/new_module' method="POST"
       br
       b name:
       br
@@ -35,7 +51,7 @@ div.blackbox
       input type='text' name='name' placeholder='name'
       br
       br
-      input type='submit' value='create module'
+      input type='submit' value='save'
     br
 
     hr.cool-hr
@@ -45,10 +61,19 @@ div.blackbox
       button toggles="#modules-list" modules list
       br
       br
-      i drag command into a module
-      br
-      i commands can be dragged between modules and re-sorted
-      div.blackbox#modules-list.clearfix
+      ul
+        li
+          i drag command into a module
+        li
+          i commands can be dragged between modules and re-sorted
+        li
+          i 
+            | if you export a module to lib, you can import it in a script using 'module_require'
+            br
+            | for example, if the module was saved with a master filename of 'my_file.rb'
+            br
+            | then in a command you could say module_require 'my_file'
+      div.blackbox#modules-list.bordered.clearfix
         - modules.each do |module_id, module_obj|
           div class=("#{module_id} module tooltip") data-id=module_id
             button toggles=(".#{module_id}.module-commands") = module_obj[:name]
@@ -63,6 +88,20 @@ div.blackbox
                     button class='remove-module-command' remove command
                     br
               br
+              form.run-module action='run_module' method="POST"
+                input type='hidden' name='id' value=module_id
+                i the number of seconds to pause between commands:
+                br
+                input type='number' name='interval' value='2'
+                br
+                input type='submit' value='run'
+              br
+              form.export-module action='export_module' method="POST"
+                input type='hidden' name='id' value=module_id
+                input type='text' name='name' placeholder='master filename'
+                br
+                input type='submit' value='export to lib'
+              br
               form.delete-module action='delete_module' method="POST"
                 input type='hidden' name='id' value=module_id
                 input type='submit' value='delete'
@@ -74,7 +113,7 @@ div.clearfix
 - if commands.keys.any?
   div.blackbox
     button toggles="#commands-list" commands list
-  div.blackbox#commands-list
+  div.blackbox#commands-list.bordered
   
     - commands.each do |id, command|
       div class=("#{id} command") data-id=id
@@ -182,9 +221,18 @@ coffee:
     $(selector).sortable
       connectWith: selector
       stop: ->
-        syncAllModules ->
-          window.location.reload()
+        syncAllModules(->)
       dropOnEmpty: true 
+
+  runModuleAjax = ->
+    $( ".run-module" ).off("submit").on  "submit", (e) ->
+      e.preventDefault()
+      $form = $(e.currentTarget)
+      data = $form.serialize()
+      # the response to this $post is discarded
+      # instead, the server sends log info over websockets
+      $.post $form.attr("action"), data
+      false
 
   $(->
     console.log "doc ready"
@@ -194,5 +242,5 @@ coffee:
     $(".delete, .delete-module").off("submit").on "submit", (e) -> confirmSubmit e
     dragAndDrop(".command")
     sortableModuleCommands(".sortable-module-command-list")
-
+    runModuleAjax()
   )
