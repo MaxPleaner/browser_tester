@@ -6,7 +6,8 @@ class MainServer
   # this shouldn't ever happen in production but helps a bit in development
   get [
     '/', '/browser', 'create_command', 'delete_command', 'run_command',
-    'update_command'
+    'update_command', 'run_module', 'new_module', 'delete_module',
+    'sync_module_commands', 'sync_all_modules'
   ] do
     if Faye::WebSocket.websocket?(request.env) 
       Websockets.setup_client request
@@ -32,8 +33,15 @@ class MainServer
   end
 
   post '/delete_command' do
-    id = params[:id]
-    Db.transaction { Db[:commands].delete id }
+    command_id = params[:id]
+    Db.transaction do
+      Db[:commands].delete command_id
+      Db[:modules].each do |module_id, moduleObj|
+        moduleObj[:commands].delete_if do |command_id|
+          command_id = command_id
+        end
+      end
+    end
     redirect '/'
   end
 
@@ -42,6 +50,43 @@ class MainServer
     command = Db.transaction { Db[:commands][id][:command] } 
     @results, @err = Browser.execute_command(command)
     slim :root
+  end
+
+  post '/new_module' do
+    name = params[:name]
+    id = SecureRandom.urlsafe_base64
+    moduleObj = { name: name, commands: [] }
+    Db.transaction { Db[:modules][id] = moduleObj }
+    redirect '/'
+  end
+
+  post '/delete_module' do
+    id = params[:id]
+    Db.transaction { Db[:modules].delete id }
+    redirect '/'
+  end
+
+  post '/sync_module_commands' do
+    module_id = params[:moduleId]
+    command_list = params[:commandIds].split(",")
+    sync_module(module_id, command_list)
+    redirect '/'
+  end
+
+  post '/sync_all_modules' do
+    params[:modules]&.each do |moduleObj|
+      moduleObj = moduleObj[1] # $.post includes indexes with arrays; ignore it
+      sync_module(moduleObj['id'], moduleObj['commandIds'])
+    end
+    redirect '/'
+  end
+
+  private
+
+  def sync_module(module_id, command_list)
+    Db.transaction do
+      Db[:modules][module_id][:commands] = command_list
+    end
   end
   
 end

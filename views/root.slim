@@ -1,39 +1,86 @@
 - commands = Db.transaction { Db[:commands] }
+- modules = Db.transaction { Db[:modules] }
 
 div.blackbox
-  header create command
+
   form action='/create_command' method="POST"
+    b name: 
+    br
     input type='text' name='name' placeholder='name'
+    br
+    b command:
+    br
     input type='text' name='command' placeholder='command'
+    br
     input type='submit' value='create command'
 
+div.blackbox
+
+  div#modules
+
+    form action='/new_module' method="POST"
+      b name:
+      br
+      input type='text' name='name' placeholder='name'
+      br
+      input type='submit' value='create module'
+    
+    - if modules.keys.any?
+      div.blackbox#modules-list.clearfix
+        - modules.each do |module_id, module_obj|
+          div class=("#{module_id} module tooltip") data-id=module_id
+            p = module_obj[:name]
+            br
+            form.delete-module action='delete_module' method="POST"
+              input type='hidden' name='id' value=module_id
+              input type='submit' value='delete'
+            br
+            ul.sortable-module-command-list
+              - (module_obj[:commands] || []).each_with_index do |command_id, idx|
+                - module_command = commands[command_id]
+                li.module-command data-id=command_id data-name=module_command[:name]
+                  b = module_command[:name]
+                  br
+                  button class='remove-module-command' remove command
+                  br
+div.clearfix
 - if commands.keys.any?
 
   div.blackbox
   
     - commands.each do |id, command|
-      
-      header = command[:name]
-      i = command[:command]
+      div class=("#{id} command") data-id=id
+        p = command[:name]
+        pre = command[:command]
+        br
 
-      div.inlinebox
-        form.delete action='/delete_command' method='POST'
-          input type='hidden' name='id' value=id
-          input type='submit' value='delete'
-    
-      div.inlinebox
-        button toggles="[action='update_command']" edit
-        form.hidden action='update_command' method='POST'
-          input type='hidden' name='id' value=id
-          input type='text' name='name' value=command[:name]
-          input type='text' name='command' value=command[:command]
-          input type='submit' value='update'
-    
-      div.inlinebox
-        form action='run_command' method='POST'
-          input type='hidden' name='id' value=id
-          input type='submit' value='run'
+        div.inlinebox
+          form.delete action='/delete_command' method='POST'
+            input type='hidden' name='id' value=id
+            input type='submit' value='delete'
+      
+        div.inlinebox
+          button toggles=(".#{id} [action='update_command']") edit
+      
+        div.inlinebox
+          form action='run_command' method='POST'
+            input type='hidden' name='id' value=id
+            input type='submit' value='run'
   
+        form.hidden action='update_command' method='POST'
+          br
+          input type='hidden' name='id' value=id
+          b name
+          br 
+          input type='text' name='name' value=command[:name]
+          br
+          b command: 
+          br
+          textarea name='command'
+            - if command[:command]&.length > 0
+              = command[:command]
+          br
+          input type='submit' value='update'
 
 - if @results
   div.blackbox
@@ -44,29 +91,79 @@ div.blackbox
     == @err
 
 coffee:
-  
-  window.SocketHelpers = ->
 
-    this.ws = new WebSocket("ws://#{window.document.location.host}/")
+  syncModule = (moduleId, commandIds, callback) ->
+    $.post("/sync_module_commands", {
+      moduleId: moduleId
+      commandIds: commandIds.join ","
+    }, callback)
 
-    this.ws.onopen = =>
-      console.log "ws open"
-      this.ws.send JSON.stringify foo: "bar"
+  syncAllModules = (callback) ->
+    modules = $.map $(".module"), (el, idx) ->
+      $module = $ el
+      id: $module.data "id"
+      commandIds: commandIdsForModule($module)
+    $.post("/sync_all_modules", {
+      modules: modules
+    }, callback)
 
-    this.ws.onmessage = (msg) ->
-      data = JSON.parse msg.data
-      console.log "you've got mail: "
-      console.dir data
 
-    this.ws.onclose = ->
-      console.log "ws closed"
+  commandIdsForModule = ($module) ->
+    # the ids are stored in the data-id attribute of .module-command nodes
+    # but $(".module-command").data("id") will not show an accurate list
+    # if some of the ids are duplicate
+    $.map $module.find(".module-command"), (el) -> $(el).data "id"
 
-    this
+  dragAndDrop = (selector) ->
+    $(selector).draggable
+      cursor: 'move'
+
+    $(".module").droppable
+      over: (e, ui) ->
+        $(e.target).addClass("drop-destination-hover")
+      out: (e, ui) ->
+        $(e.target).removeClass("drop-destination-hover")
+      drop: (e, ui) ->
+        $module = $(e.target)
+        moduleId = $module.data("id")
+        ids = commandIdsForModule($module)
+        $command = $(e.originalEvent.toElement)
+        if $command.hasClass("module-command")
+          return false # proceed - it's a sort event
+        else if ! $command.hasClass "command"
+          # this is a kind of wierd situation: when text inside a draggable
+          # is dragged, then only the text shows up as dragged and not the
+          # parent container
+          $command = $command.parents(".command")
+        commandId = $command.data "id"
+        ids.push commandId
+        syncModule moduleId, ids, ->
+          window.location.reload()
+
+    $(".remove-module-command").off("click").on "click", (e) ->
+      $moduleCommand = $(e.currentTarget).parents(".module-command")
+      $module = $moduleCommand.parents(".module")
+      $moduleCommand.remove()
+      moduleId = $module.data "id"
+      commandIds = commandIdsForModule($module)
+      syncModule moduleId, commandIds, ->
+        window.location.reload()
+
+  sortableModuleCommands = (selector) ->
+    $(selector).sortable
+      connectWith: selector
+      stop: ->
+        syncAllModules ->
+          window.location.reload()
+      dropOnEmpty: true 
 
   $(->
     console.log "doc ready"
     window.helpers = new SocketHelpers()
     window.ws = helpers.ws
     initToggling()
-    $(".delete").off("submit").on "submit", (e) -> confirmSubmit e
+    $(".delete, .delete-module").off("submit").on "submit", (e) -> confirmSubmit e
+    dragAndDrop(".command")
+    sortableModuleCommands(".sortable-module-command-list")
+
   )

@@ -2,6 +2,7 @@
 require 'pstore'
 Db = PStore.new "database.pstore"
 Db.transaction { Db[:commands] ||= {} }
+Db.transaction { Db[:modules] ||= {} }
 
 # Sinatra
 require 'sinatra/base'
