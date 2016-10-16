@@ -5,15 +5,20 @@ div.blackbox
 
   button toggles="#create-command" create command
   form#create-command.hidden action='/create_command' method="POST"
+    br
     b name: 
     br
     input type='text' name='name' placeholder='name'
     br
+    br
     b command:
+    br
     br
     input type='text' name='command' placeholder='command'
     br
+    br
     input type='submit' value='save'
+  br
 
 hr.cool-hr
 
@@ -23,9 +28,12 @@ div.blackbox
     
     button toggles='#create-module' create module
     form#create-module.hidden action='/new_module' method="POST"
+      br
       b name:
       br
+      br
       input type='text' name='name' placeholder='name'
+      br
       br
       input type='submit' value='create module'
     br
