@@ -9,13 +9,11 @@ class MainServer::Browser
   Driver = CapybaraDriver.new_driver
 
   # extra methods made available to user-defined commands
-  Driver.class.class_exec { include DriverHelpers::InstanceMethods }
-  Driver.class.class_exec { extend DriverHelpers::ClassMethods }
+  Driver.class.class_exec { include DriverHelpers }
 
   # returns [results or nil, err_string or nil]
   def self.execute_command(cmd_string)
     begin
-      binding.pry
       cmd_result = with_dsl { eval cmd_string }
       ensure_chrome_is_reachable(cmd_result)
     rescue BrowserIsClosedError
