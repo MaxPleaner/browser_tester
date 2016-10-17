@@ -84,16 +84,34 @@ class MainServer
   post '/run_module' do
     id = params[:id]
     interval = params[:interval] || 1 # default num seconds between commands
-    commands = Db.transaction { Db[:modules][id][:commands] }.map do |cmd_id|
-      Db.transaction { Db[:commands][cmd_id] }
-    end
+    commands = get_commands(id)
     run_commands(commands, interval)
   end
 
   post '/export_module' do
+    id = params[:id]
+    commands = get_commands(id)
+    filename = params[:name]
+    if filename.chars.any? { |char| !char =~ /[a-zA-Z0-9\_\.]/ }
+      @err = "File name is not valid - only use alphaneumerics, underscore, and period"
+    else
+      File.open("export/#{filename}", "w") do |f|
+        commands.each do |command|
+          string = "\# #{command[:name]}\n#{command[:command]}\n\n"
+          f.write string
+        end
+      end
+    end
+    slim :root
   end
 
   private
+
+  def get_commands(module_id)
+    Db.transaction { Db[:modules][module_id][:commands] }.map do |cmd_id|
+      Db.transaction { Db[:commands][cmd_id] }
+    end
+  end
 
   def sync_module(module_id, command_list)
     Db.transaction do

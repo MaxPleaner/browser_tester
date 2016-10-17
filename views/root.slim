@@ -117,7 +117,10 @@ div.clearfix
     - commands.each do |id, command|
       div class=("#{id} command") data-id=id
         p = command[:name]
-        pre = command[:command]
+        br
+        button toggles=(".#{id}.command-body") show content
+        br
+        pre class=("#{id} command-body hidden") = command[:command]
         br
 
         div.inlinebox

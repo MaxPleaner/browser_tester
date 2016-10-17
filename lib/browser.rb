@@ -1,14 +1,22 @@
 require_relative './capybara_driver.rb'
+require_relative './driver_helpers.rb'
+
+class BrowserIsClosedError < StandardError; end
 
 class MainServer::Browser
 
   Driver = CapybaraDriver.new_driver
+
+  # extra methods made available to user-defined commands
+  Driver.class.class_exec { include DriverHelpers }
 
   # returns [results or nil, err_string or nil]
   def self.execute_command(cmd_string)
     begin
       cmd_result = with_dsl { eval cmd_string }
       ensure_chrome_is_reachable(cmd_result)
+    rescue BrowserIsClosedError
+      retry
     rescue Exception => e
       [nil, build_error_string(e)]
     end
@@ -26,7 +34,7 @@ class MainServer::Browser
   def self.ensure_chrome_is_reachable(eval_result)
     if eval_result.is_a?(Hash) && is_disconnected?(eval_result['message'])
       const_set(:Driver, CapybaraDriver.new_driver)
-      return [nil, "browser window was closed - restarted. Try again."]
+      raise BrowserIsClosedError
     end
     [eval_result, nil]
   end
