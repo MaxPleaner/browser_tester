@@ -104,7 +104,7 @@ class MainServer
   def run_commands(commands, interval)
     # Thread.new do
       commands.each do |command|
-        @results, @err = Browser.execute_command(command)
+        @results, @err = Browser.execute_command(command[:command])
         Websockets.send_to_all({
           log: {
             results: @results,

@@ -1,7 +1,6 @@
 - commands = Db.transaction { Db[:commands] }
 - modules = Db.transaction { Db[:modules] }
 
-pre.hidden#log
 
 div.blackbox
 
@@ -150,6 +149,8 @@ div.clearfix
           input type='submit' value='update'
   hr.cool-hr
 
+pre.hidden#log
+
 - if @results
   div.blackbox
     == @results
@@ -234,7 +235,16 @@ coffee:
       $.post $form.attr("action"), data
       false
 
+  ChangeUrl = (page, url) ->
+    if typeof(history.pushState) != 'undefined'
+      obj =
+        Page: page
+        Url: url
+      history.pushState obj, obj.Page, obj.Url
+
+
   $(->
+    ChangeUrl("", "/")
     console.log "doc ready"
     window.helpers = new SocketHelpers()
     window.ws = helpers.ws

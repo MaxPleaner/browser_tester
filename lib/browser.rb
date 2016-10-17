@@ -33,7 +33,7 @@ class MainServer::Browser
 
   def self.is_disconnected?(msg)
     ["chrome not reachable", "disconnected"].any? do |str|
-      msg.include?(string)
+      msg.include?(str)
     end
   end
 
