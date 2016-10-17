@@ -4,8 +4,6 @@ Basically you can define userscripts through the web interface. These can
 be in ruby (i.e. calling Capybara / Selenium commands) or can be in Javascript 
 (i.e. if using Selenium's `execute_script`.
 
-
-
 Prerequisites:
 
 - a computer that responds to Unix file commands and has a GUI 
@@ -27,3 +25,13 @@ Usage:
  command and observe the website being opened in a browser. 
 - Commands can be grouped into modules and exported to libraries. 
 The web interface contains some more instructions about this. 
+
+
+Status:
+
+_does it work?_
+
+Yeah, I'd consider it functional at this point. 
+
+Keep in mind, though: this is a completely insecure app - it encourages remote code execution. It'd be cool if it supported deployment (using a client / server Selenium 
+setup), but I haven't tried that yet and I'm not sure when I'll have the time. 
