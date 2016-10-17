@@ -1,0 +1,10 @@
+function _sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+window._sleep = _sleep
+
+async function sleep(ms) {
+  await _sleep(ms)
+}
+
+window.sleep = sleep

@@ -60,7 +60,8 @@ div.blackbox
       button toggles="#modules-list" modules list
       br
       br
-      ul
+      button toggles='#module-instructions' instructions
+      ul.hidden#module-instructions
         li
           i drag command into a module
         li
@@ -69,9 +70,22 @@ div.blackbox
           i 
             | if you export a module to lib, you can import it in a script using 'module_require'
             br
-            | for example, if the module was saved with a master filename of 'my_file.rb'
+            | for example, if this is saved with a master filename of 'my_module.rb': 
+            pre
+              | module MyModule
+                  Driver.delegate(self)
+                  def self.foo
+                    visit 'http://yahoo.com'
+                  end
+                end              
+            | then in a command you could say: 
+            pre
+              | module_require 'my_module'
+                MyModule.foo
+            | the 'Driver.delegate(self)' defines method_missing for both the class and instance scope
             br
-            | then in a command you could say module_require 'my_file'
+            | this is to enable using capybara methods like 'visit' with an implicit caller. 
+
       div.blackbox#modules-list.bordered.clearfix
         - modules.each do |module_id, module_obj|
           div class=("#{module_id} module tooltip") data-id=module_id
