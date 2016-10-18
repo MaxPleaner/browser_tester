@@ -1,4 +1,3 @@
-require_relative './delegate_to_driver'
 require_relative './capybara_driver.rb'
 require_relative './driver_helpers.rb'
 

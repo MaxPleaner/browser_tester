@@ -1,3 +1,11 @@
+# load environment varaible data from the .env file
+# Using this is optional
+require 'dotenv'
+Dotenv.load
+
+# Fake data
+require 'faker'
+
 # Very simple database
 require 'pstore'
 Db = PStore.new "database.pstore"
@@ -32,7 +40,6 @@ end
 
 # Core utils
 require_relative './lib/core_utils'
-include CoreUtils
 
 # Automated browser API
 require_relative './lib/browser'

@@ -1,25 +1,33 @@
+- # get the database data in memory.
 - commands = Db.transaction { Db[:commands] }
 - modules = Db.transaction { Db[:modules] }
 
-
 div.blackbox
 
+  - # button to toggle open/close command instructions
+  button toggles='#command-instructions' command instructions
+  br
+  br
+
+  - # command instructions
+  ul#command-instructions.hidden
+    li
+      i
+       | the 
+       a href='https://github.com/jnicklas/capybara' capybara 
+       | api is available as top-level methods
+    li
+      i
+       | for example, a command to open a url is 
+       code visit 'http://google.com'
+    li
+      i more broadly, though, a command can contain arbitrary ruby code.
+
+  - # button to toggle open/close the create command form
   button toggles="#create-command" create command
 
+  - # the form to create a command
   form.bordered#create-command.hidden action='/create_command' method="POST"
-    
-    ul
-      li
-        i
-         | the 
-         a href='https://github.com/jnicklas/capybara' capybara 
-         | api is available as top-level methods
-      li
-        i
-         | for example, a command to open a url is 
-         code visit 'http://google.com'
-      li
-        i more broadly, though, a command can contain arbitrary ruby code.
 
     b name: 
     br
@@ -41,7 +49,11 @@ div.blackbox
 
   div#modules
     
+    - # button to toggle open/close the create-module form
     button toggles='#create-module' create module
+    br
+
+    - # form to create a module
     form.bordered#create-module.hidden action='/new_module' method="POST"
       br
       b name:
@@ -54,53 +66,80 @@ div.blackbox
     br
 
     hr.cool-hr
+
+    - # button to toggle open/close instructions for module usage
+    button toggles='#module-instructions' module instructions
+
+    - # instructions for module usage
+    ul.hidden#module-instructions
+      li
+        i drag command into a module
+      li
+        i commands can be dragged between modules and re-sorted
+      li
+        i 
+          | if you export a module to lib, you can import it in a script using 'module_require'
+          br
+          | for example, if this is saved with a master filename of 'my_module.rb': 
+          pre
+            | module MyModule
+                delegate_to_driver(self)
+                def self.foo
+                  visit 'http://yahoo.com'
+                end
+              end              
+          | then in a command you could say: 
+          pre
+            | module_require 'my_module'
+              MyModule.foo
+          | the 'delegate_to_driver(self)' defines method_missing for both the class and instance scope
+          br
+          | this is to enable using capybara methods like 'visit' with an implicit caller. 
     
+    - # don't bother showing the modules list if there aren't any
     - if modules.keys.any?
       br
+
+      - # button to toggle open/close the module list
       button toggles="#modules-list" modules list
       br
       br
-      button toggles='#module-instructions' instructions
-      ul.hidden#module-instructions
-        li
-          i drag command into a module
-        li
-          i commands can be dragged between modules and re-sorted
-        li
-          i 
-            | if you export a module to lib, you can import it in a script using 'module_require'
-            br
-            | for example, if this is saved with a master filename of 'my_module.rb': 
-            pre
-              | module MyModule
-                  Driver.delegate(self)
-                  def self.foo
-                    visit 'http://yahoo.com'
-                  end
-                end              
-            | then in a command you could say: 
-            pre
-              | module_require 'my_module'
-                MyModule.foo
-            | the 'Driver.delegate(self)' defines method_missing for both the class and instance scope
-            br
-            | this is to enable using capybara methods like 'visit' with an implicit caller. 
 
+      - # list of modules
       div.blackbox#modules-list.bordered.clearfix
         - modules.each do |module_id, module_obj|
+
+          - # section for a single module
           div class=("#{module_id} module tooltip") data-id=module_id
+
+            - # button to toggle open/close the module's list of commands
             button toggles=(".#{module_id}.module-commands") = module_obj[:name]
             br
+
+            - # the module's list of commands
+            - # they are contained in a <ul> marked as 'sortable'
+            - # so they can be reordered or moved to other modules
+            - # via drag-n-drop
             div class=("#{module_id} module-commands")
               ul.sortable-module-command-list
                 - (module_obj[:commands] || []).each_with_index do |command_id, idx|
                   - module_command = commands[command_id]
+                  
+                  - # the list item for a single .module-command
                   li.module-command data-id=command_id data-name=module_command[:name]
+
+                    - # print the name
                     b = module_command[:name]
                     br
+
+                    - # a button to remove the command from the module
                     button class='remove-module-command' remove command
                     br
+
               br
+
+              - # form to run a module's commands in sequence
+              - # submits over AJAX and doesn't refresh the page
               form.run-module action='run_module' method="POST"
                 input type='hidden' name='id' value=module_id
                 i the number of seconds to pause between commands:
@@ -109,47 +148,76 @@ div.blackbox
                 br
                 input type='submit' value='run'
               br
+
+              - # form to export a module to a ruby fule
+              - # see the server route /export_module for more info
               form.export-module action='export_module' method="POST"
                 input type='hidden' name='id' value=module_id
                 input type='text' name='name' placeholder='master filename'
                 br
                 input type='submit' value='export to lib'
               br
+
+              - # form to delete a module (will launch a confirm prompt)
               form.delete-module action='delete_module' method="POST"
                 input type='hidden' name='id' value=module_id
                 input type='submit' value='delete'
 
       div.clearfix
+
       hr.cool-hr
 
 div.clearfix
+
+- # don't bother showing a commands list if there are no commands
 - if commands.keys.any?
+
   div.blackbox
+
+    - # button to toggle open/close the list of commands
     button toggles="#commands-list" commands list
+  
+  - # list of commands
   div.blackbox#commands-list.bordered
   
+    - # Sections for individual commands
+    - # All commands will have one of these sections on the page
+    - # but it is not the same as the section for commands that are inside modules
     - commands.each do |id, command|
       div class=("#{id} command") data-id=id
+
+        - # Show the command's name 
         p = command[:name]
         br
+        
+        - # button to toggle open/close the command content
         button toggles=(".#{id}.command-body") show content
         br
+
+        - # the command's content is in a <pre>
         pre class=("#{id} command-body hidden") = command[:command]
         br
 
         div.inlinebox
+
+          - # form to delete a command
+          - # the server will remove it from any modules as well
+          - # launches a confirm prompt
           form.delete action='/delete_command' method='POST'
             input type='hidden' name='id' value=id
             input type='submit' value='delete'
       
+        - # button to toggle open/close the update-command form
         div.inlinebox
           button toggles=(".#{id} [action='update_command']") edit
       
+        - # button to run a command
         div.inlinebox
           form action='run_command' method='POST'
             input type='hidden' name='id' value=id
             input type='submit' value='run'
   
+        - # form to update a command's name and content
         form.hidden action='update_command' method='POST'
           br
           input type='hidden' name='id' value=id
@@ -164,26 +232,43 @@ div.clearfix
               = command[:command]
           br
           input type='submit' value='update'
+
   hr.cool-hr
+
+div.clearfix
 
 pre.hidden#log
 
+- # Show command result for synchronous routes
+- # This would just be the 'return value' of command.
 - if @results
   div.blackbox
     == @results
 
+-# Show errors for synchronous routes
 - if @err
   div.blackbox
     == @err
 
 coffee:
 
+  # When a command is dragged into a module, sync that module's command list
+  # with the server
+  # This is done over AJAX, but it is synchronous because the success handler
+  # refreshes the page.
+  #
   syncModule = (moduleId, commandIds, callback) ->
     $.post("/sync_module_commands", {
       moduleId: moduleId
       commandIds: commandIds.join ","
     }, callback)
 
+  # There is a special route for syncing all modules at once
+  # This fires when a command is dragged to a new position in its module
+  # or when it's dragged to a different module.
+  # This route submits over AJAX but is synchronous
+  # It will refresh the page on success
+  #
   syncAllModules = (callback) ->
     modules = $.map $(".module"), (el, idx) ->
       $module = $ el
@@ -193,39 +278,72 @@ coffee:
       modules: modules
     }, callback)
 
-
+  # Use the DOM to get ids of commands belonging to a specific module
+  #
   commandIdsForModule = ($module) ->
     # the ids are stored in the data-id attribute of .module-command nodes
     # but $(".module-command").data("id") will not show an accurate list
     # if some of the ids are duplicate
     $.map $module.find(".module-command"), (el) -> $(el).data "id"
 
-  dragAndDrop = (selector) ->
+  # Setup drag-n-drop for the page
+  # This function only concerns moving commands into modules
+  # Sorting commands between / within modules is handled separately
+  # 
+  dragAndDrop =  ->
+    makeDraggable(".command")
+    makeDroppable(".module", dropFn: moduleReceivedDrop)
+    listenersToRemoveModule()
+
+  # Say that an element can be dragged.
+  # TODO: move elements back to their original position if they're not
+  # dropped on a droppable
+  #
+  makeDraggable = (selector) ->
     $(selector).draggable
       cursor: 'move'
 
-    $(".module").droppable
-      over: (e, ui) ->
-        $(e.target).addClass("drop-destination-hover")
-      out: (e, ui) ->
-        $(e.target).removeClass("drop-destination-hover")
-      drop: (e, ui) ->
-        $module = $(e.target)
-        moduleId = $module.data("id")
-        ids = commandIdsForModule($module)
-        $command = $(e.originalEvent.toElement)
-        if $command.hasClass("module-command")
-          return false # proceed - it's a sort event
-        else if ! $command.hasClass "command"
-          # this is a kind of wierd situation: when text inside a draggable
-          # is dragged, then only the text shows up as dragged and not the
-          # parent container
-          $command = $command.parents(".command")
-        commandId = $command.data "id"
-        ids.push commandId
-        syncModule moduleId, ids, ->
-          window.location.reload()
+  # establish an element as a drop-target (draggables can be dropped onto it)
+  # Provides default functions for `over` and `out`
+  # so that the .drop-destination-hover class can be used for styling.
+  #
+  makeDroppable = (selector, { overFn, outFn, dropFn }) ->
+    overFn ||= $(e.target).addClass("drop-destination-hover")
+    outFn ||= -> $(e.target).removeClass("drop-destination-hover")
+    $(selector).droppable
+      over: (e, ui) -> overFn
+      out: (e, ui) -> outFn
+      drop: dropFn
 
+  # When a .command is dragged to a .module, this event fires.
+  # It first appends the .command to the .module on the DOM.
+  # Then, calling `syncModule` syncs the module's command list with the server.
+  # A page refresh is triggered in response to the `syncModule` AJAX call.
+  #
+  moduleReceivedDrop = (e, ui) ->
+    $module = $(e.target)
+    moduleId = $module.data("id")
+    ids = commandIdsForModule($module)
+    $command = $(e.originalEvent.toElement)
+    # .module-command nodes being sorted will trigger a drop event as well.
+    # Just ignore that here and let the sortable events handle it
+    if $command.hasClass("module-command")
+      return false
+    else if ! $command.hasClass "command"
+      # this is a kind of wierd situation: when text inside a draggable
+      # is dragged, then only the text shows up as dragged and not the
+      # parent container
+      # Resolve this by looking up the parent command section
+      $command = $command.parents(".command")
+    commandId = $command.data "id"
+    ids.push commandId
+    syncModule moduleId, ids, ->
+      window.location.reload()
+
+  # Once placed in a module, a command can then be removed
+  # This makes an AJAX call, but in the success handler it refreshes the page
+  #
+  listenersToRemoveModule = ->
     $(".remove-module-command").off("click").on "click", (e) ->
       $moduleCommand = $(e.currentTarget).parents(".module-command")
       $module = $moduleCommand.parents(".module")
@@ -235,6 +353,9 @@ coffee:
       syncModule moduleId, commandIds, ->
         window.location.reload()
 
+  # Allow .module-command to be sorted via drag-n-drop
+  # They can be dragged to other modules as well.
+  #
   sortableModuleCommands = (selector) ->
     $(selector).sortable
       connectWith: selector
@@ -242,6 +363,9 @@ coffee:
         syncAllModules(->)
       dropOnEmpty: true 
 
+  
+  # Submit the .run-module form over AJAX
+  #
   runModuleAjax = ->
     $( ".run-module" ).off("submit").on  "submit", (e) ->
       e.preventDefault()
@@ -252,22 +376,80 @@ coffee:
       $.post $form.attr("action"), data
       false
 
+  # Rewrite the url in the browser
+  # This just changes what is visible in the URL bar
+  # It doesn't trigger a refresh, though if the user chooses to refresh
+  # then the custom url will be hit
+  #
   ChangeUrl = (page, url) ->
+    # Choosing a 'name' for the page is optional.
+    # Any string or null/undefined/false can be passed
+    page ||= ""
     if typeof(history.pushState) != 'undefined'
       obj =
         Page: page
         Url: url
       history.pushState obj, obj.Page, obj.Url
 
+  
+  # Note the ace editor for textareas is not working yet
+  # need to fix this
+  #
+  AceEditors = ->
+    $.each $('textarea'), (idx, elem) ->
+      editor = ace.edit(elem)
+      editor.getSession()
 
+
+  # Document ready code
+  # ======================================================
+  #
   $(->
+
+    # Some non-idempotent REST routes render the root template
+    # Rewrite the url in the browser to ensure that page refreshes go to '/'
+    #
     ChangeUrl("", "/")
-    console.log "doc ready"
+  
+    # Set up websocket listeners, store a global reference
+    #
     window.helpers = new SocketHelpers()
     window.ws = helpers.ws
+
+    # There is a simply HTML API for toggling elements open/close:
+    # Any clickable node can have an attribute of 'toggles'.
+    # The value is a CSS selector pointing to another element on the page.
+    # Clicking the trigger toggles the .hidden class on the target.
+    # To have the target be hidden initially, just give it a .hidden class. 
+    #
     initToggling()
-    $(".delete, .delete-module").off("submit").on "submit", (e) -> confirmSubmit e
-    dragAndDrop(".command")
+
+    # Confirm submission of delete forms
+    #
+    $(".delete, .delete-module")
+    .off("submit")
+    .on "submit", (e) -> confirmSubmit e
+
+    # Set up the drag-n-drop functionality for moving a .command into a .module
+    # This is immediately synced with the server and will refresh the page.
+    #
+    dragAndDrop()
+
+    # Once inside modules, commands can be dragged to another position in the
+    # same module (re-sorting) or dragged to another module.
+    # All these changes are immediately synced with the server and refresh. 
+    #
     sortableModuleCommands(".sortable-module-command-list")
+
+    # Unlike most of the other forms here, .run-module is submitted over AJAX
+    # A module contains a list of commands.
+    # When the server receives the AJAX request, it will run commands in order
+    # and will send the result to the browser via websockets.
+    #
     runModuleAjax()
+
+    # It would be nice if textareas were ACE editors
+    # though this needs to be debugged
+    #
+    # AceEditors()
   )

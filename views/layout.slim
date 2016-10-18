@@ -19,9 +19,9 @@ html
       textarea
         width: 400px
         height: 200px
+        position: relative
 
       .logMsg
-
       
       .bordered
         border-left: 1px dotted grey
@@ -53,6 +53,7 @@ html
         border: 1px dotted grey
         word-wrap: word-break
         margin: 15px
+        float: left
         padding: 5px
 
       .center
@@ -92,11 +93,20 @@ html
         margin-left: 10px
         margin: 15px
 
+      textarea
+
+
   body
     == yield
 
   coffee:
 
+    # use elements with a 'toggles' attribute as triggers to toggle open/close
+    # other elements.
+    # The value of the attribute is a CSS selector that points to the target
+    # Functionally, all this does is toggle on/off the .hidden class.
+    # A target can be given this class to be hidden when the page loads. 
+    #
     window.initToggling = ->
       $toggleTriggers = $("*[toggles]")
       $toggleTriggers.off("click").on "click", (e) ->
@@ -105,6 +115,9 @@ html
         $target.toggleClass "hidden"
         true
 
+    # A method used to require confirmation before submitting a form
+    # This is applied to the 'destroy' forms in the app. 
+    #
     window.confirmSubmit = (e) ->
       if confirm("are you sure")
         true # continue with the event
@@ -112,36 +125,54 @@ html
         e.preventDefault()
         false
 
+    # A generic helper method to see if an object is a Hash (and not an Array)
+    #
     window.isHash = (obj) ->
       !obj || Array.isArray(obj) || (obj.constructor != Object)
 
-    
+    # Given a message string, append it to the DOM.
+    # This is how incoming websocket messages are displayed
+    # requires that there being a #log container
+    #
     window.printLog = (msg) ->
       $logMsg = $("<div class='logMsg'></div>").html(msg)
       $removeBtn = $("<button class='removeLogMsg'><b>clear</b></button>")
       $("#log").removeClass("hidden").append($logMsg.prepend($removeBtn))
       logMsgRemoveListener($removeBtn)
 
+    # If a logged message is clicked, it will be removed from the DOM
+    # All log messages are removed when the page refreshes anyway
+    #
     window.logMsgRemoveListener = ($removeBtn) ->
       $removeBtn.off("click").on 'click', (e) ->
         $logMsg = $(e.currentTarget).parents(".logMsg")
         $logMsg.remove()
 
+    # Websocket API
+    #
     window.SocketHelpers = ->
 
+      # start a websocket connection
+      #
       this.ws = new WebSocket("ws://#{window.document.location.host}/")
 
+      # event when websocket opens
+      # not used
+      #
       this.ws.onopen = =>
-        console.log "ws open"
-        this.ws.send JSON.stringify foo: "bar"
 
+      # event when a websocket message is received.
+      # parse the message as JSON, make sure it's a hash, and look for a 'log' key.
+      # If one is given, attach the 'log' value to the "#log" container on the DOM.
+      #
       this.ws.onmessage = (msg) ->
         data = JSON.parse msg.data
         console.dir data
         if Object.keys(data).includes("log")
-          printLog(JSON.stringify data.log)
+          printLog JSON.stringify $.makeArray data.log
 
+      # event when a websocket closes
+      # not used
       this.ws.onclose = ->
-        console.log "ws closed"
 
       this
