@@ -40,20 +40,20 @@ class MainServer < Sinatra::Base
 end
 
 # Core utils
-require_relative './lib/core_utils'
+require_relative './lib/core_utils.rb'
 
 # Capybara / Selenium config
-require_relative './capybara_driver.rb'
+require_relative './lib/capybara_driver.rb'
 
 # Methods added to capybara
-require_relative './driver_helpers.rb'
+require_relative './lib/driver_helpers.rb'
 
 # Automated browser API
-require_relative './lib/browser'
+require_relative './lib/browser.rb'
 Driver = MainServer::Browser::Driver
 
 # HTTP routes
-require_relative './lib/routes'
+require_relative './lib/routes.rb'
 
 # Websocket API
-require_relative './lib/websockets'
+require_relative './lib/websockets.rb'

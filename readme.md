@@ -30,6 +30,31 @@ The web interface contains some more instructions about this.
 - If you're exporting modules, keep in mind that their destination folder ('/export') 
 is ignored by git. Also ignored is the PStore database 
 
+**sample modules**
+
+See [browser_scripts](http://github.com/maxpleaner/browser_scripts) for some module
+files you can include in your project. Just copy any of them into the `export/` folder.
+
+For example, if you have `export/scroll.rb`, then in your command you can say:
+
+```rb
+module_require 'scroll'
+Scroll.start(:down) # this will start scrolling on an interval
+sleep 5
+Scroll.stop
+```
+
+Note that some of these require you to set environment variables beforehand.
+
+These sample modules include:
+
+- async (run async actions on the server, such as sending websocket messages
+  on an interval)
+- scroll (scroll up and down on a webpage)
+- twitter (login and a fun helper method to post Hipster lorum to your feed)
+- angellist (login and get job listings as JSON) 
+- backup (see the source for info about setting this up)
+
 **Development**:
 
 Here are some of the major gems & libraries this uses:
