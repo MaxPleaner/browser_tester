@@ -128,7 +128,7 @@ html
     # A generic helper method to see if an object is a Hash (and not an Array)
     #
     window.isHash = (obj) ->
-      !obj || Array.isArray(obj) || (obj.constructor != Object)
+      obj && !(Array.isArray(obj)) && (obj.constructor == Object)
 
     # Given a message string, append it to the DOM.
     # This is how incoming websocket messages are displayed
@@ -167,8 +167,7 @@ html
       #
       this.ws.onmessage = (msg) ->
         data = JSON.parse msg.data
-        console.dir data
-        if Object.keys(data).includes("log")
+        if isHash(data) && Object.keys(data).includes("log")
           printLog JSON.stringify $.makeArray data.log
 
       # event when a websocket closes

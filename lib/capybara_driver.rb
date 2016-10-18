@@ -14,7 +14,7 @@ class CapybaraDriver
     Capybara.register_driver :chrome do |app|
       profile = Selenium::WebDriver::Chrome::Profile.new
       profile['download.prompt_for_download'] = false
-      profile['download.default_directory'] = "/home/max/Desktop"
+      profile['download.default_directory'] = "~/Desktop"
       Capybara::Selenium::Driver.new( app,
         browser: :chrome,
         profile: profile,

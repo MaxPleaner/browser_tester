@@ -33,6 +33,7 @@ require 'faye/websocket'
 require 'thin'
 Faye::WebSocket.load_adapter('thin')
 
+
 # MainServer class definition
 # it's extended by files in lib/
 class MainServer < Sinatra::Base
@@ -41,8 +42,15 @@ end
 # Core utils
 require_relative './lib/core_utils'
 
+# Capybara / Selenium config
+require_relative './capybara_driver.rb'
+
+# Methods added to capybara
+require_relative './driver_helpers.rb'
+
 # Automated browser API
 require_relative './lib/browser'
+Driver = MainServer::Browser::Driver
 
 # HTTP routes
 require_relative './lib/routes'

@@ -1,5 +1,5 @@
 require './main_server'
 
-ENV["RACK_ENV"] ||= "development"
+ENV["RACK_ENV"] ||= "production"
 
 run MainServer

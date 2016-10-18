@@ -149,7 +149,7 @@ div.blackbox
                 input type='submit' value='run'
               br
 
-              - # form to export a module to a ruby fule
+              - # form to export a module to a ruby file
               - # see the server route /export_module for more info
               form.export-module action='export_module' method="POST"
                 input type='hidden' name='id' value=module_id
@@ -237,6 +237,8 @@ div.clearfix
 
 div.clearfix
 
+- # container for printing websocket messages
+- # empty to start out with - notifications are cleared upon refresh
 pre.hidden#log
 
 - # Show command result for synchronous routes
@@ -254,8 +256,8 @@ coffee:
 
   # When a command is dragged into a module, sync that module's command list
   # with the server
-  # This is done over AJAX, but it is synchronous because the success handler
-  # refreshes the page.
+  # This is done over AJAX, but when this method is called it's passed
+  # a callback which refreshes the pages, so it ends up being synchronous. 
   #
   syncModule = (moduleId, commandIds, callback) ->
     $.post("/sync_module_commands", {
@@ -266,8 +268,8 @@ coffee:
   # There is a special route for syncing all modules at once
   # This fires when a command is dragged to a new position in its module
   # or when it's dragged to a different module.
-  # This route submits over AJAX but is synchronous
-  # It will refresh the page on success
+  # This route submits over AJAX, but like syncModule, when this method is called
+  # it is passed a callback which refreshes the page so it ends up being synchronous.
   #
   syncAllModules = (callback) ->
     modules = $.map $(".module"), (el, idx) ->
@@ -293,7 +295,6 @@ coffee:
   dragAndDrop =  ->
     makeDraggable(".command")
     makeDroppable(".module", dropFn: moduleReceivedDrop)
-    listenersToRemoveModule()
 
   # Say that an element can be dragged.
   # TODO: move elements back to their original position if they're not
@@ -355,16 +356,25 @@ coffee:
 
   # Allow .module-command to be sorted via drag-n-drop
   # They can be dragged to other modules as well.
+  # The containerSelector passed to this function is
+  # ".sortable-module-command-list" - this is an unordered list
+  # Sice .module-command nodes are list items inside this list,
+  # they will be sortable.  
   #
-  sortableModuleCommands = (selector) ->
-    $(selector).sortable
-      connectWith: selector
+  sortableModuleCommands = (containerSelector) ->
+    $(containerSelector).sortable
+      connectWith: containerSelector
       stop: ->
-        syncAllModules(->)
-      dropOnEmpty: true 
+        syncAllModules(->) # the modules are synced with the server,
+                           # but the AJAX response is discarded
+                           # The UI state is already correct
+                           # TODO: add an error handler???
+      dropOnEmpty: true
 
   
   # Submit the .run-module form over AJAX
+  # This will run the module's commands in sequence.
+  # The results are pushed over websockets as they come in.
   #
   runModuleAjax = ->
     $( ".run-module" ).off("submit").on  "submit", (e) ->
@@ -428,7 +438,10 @@ coffee:
     #
     $(".delete, .delete-module")
     .off("submit")
-    .on "submit", (e) -> confirmSubmit e
+    .on "submit", confirmSubmit
+
+    # listeners to remove a module (does some DOM lookups)
+    listenersToRemoveModule()
 
     # Set up the drag-n-drop functionality for moving a .command into a .module
     # This is immediately synced with the server and will refresh the page.
@@ -447,6 +460,7 @@ coffee:
     # and will send the result to the browser via websockets.
     #
     runModuleAjax()
+
 
     # It would be nice if textareas were ACE editors
     # though this needs to be debugged

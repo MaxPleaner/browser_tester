@@ -18,7 +18,7 @@ be in ruby (i.e. calling Capybara / Selenium commands) or can be in Javascript
 - clone this repo
 - run `bundle install`
 - run `sh start.sh`
-- go to `localhost:3000`
+- go to `localhost:9292`
 
 **Usage**:
 
